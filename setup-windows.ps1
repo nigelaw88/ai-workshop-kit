@@ -37,12 +37,25 @@ function Add-ToUserPath {
     param([string]$Dir)
     $currentUserPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if (-not $currentUserPath) { $currentUserPath = "" }
-    $parts = $currentUserPath -split ";" | Where-Object { $_ -ne "" }
-    if ($parts -notcontains $Dir) {
-        $newPath = ($parts + $Dir) -join ";"
-        [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+
+    # Auto-repair any missing-semicolon concatenation from an earlier run
+    $currentUserPath = $currentUserPath -replace '(?<!^|;)([A-Za-z]:\\)', ';$1'
+
+    # Force array with @(...) so single-entry Paths don't string-concatenate on '+'
+    $parts = @($currentUserPath -split ";" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
+    $cleanParts = @()
+    foreach ($p in $parts) {
+        if ($cleanParts -notcontains $p) { $cleanParts += $p }
     }
-    if (($env:Path -split ";") -notcontains $Dir) {
+    if ($cleanParts -notcontains $Dir) {
+        $cleanParts += $Dir
+    }
+
+    $newPath = $cleanParts -join ";"
+    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+
+    $procParts = @($env:Path -split ";" | Where-Object { $_ -ne "" })
+    if ($procParts -notcontains $Dir) {
         $env:Path = "$Dir;$env:Path"
     }
 }
