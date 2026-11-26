@@ -1,11 +1,14 @@
-# Agentic AI Workshop — Pre-Flight Setup Kit (`opencode` + `uv` Python)
+# Agentic AI Workshop — Pre-Flight Setup Kit
 
-A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed laptops (**macOS** & **Windows 10/11**).
+A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed laptops (**macOS** & **Windows 10/11**), covering all 6 workshop sessions (intro, workflows, creative/video, browser automation, data, and systems).
 
-- **No Admin rights required** (installs cleanly inside the user's home folder)
-- **No Xcode / Homebrew required on macOS** (avoids the 20-minute Xcode Command Line Tools download)
-- **No Node.js / Git required** (uses standalone OpenCode v2 binary + `uv` standalone Python 3.12)
-- **Takes ~30 seconds** and prints a **Pre-Flight Check Summary** to screenshot 24–48 hours before the workshop.
+### What It Installs (User-Space Only — No Admin, No Xcode, No Homebrew)
+- **OpenCode v2** — standalone agentic AI terminal CLI
+- **`uv` + Python 3.12** — fast, isolated Python runtime (never triggers macOS Xcode CLT)
+- **`ffmpeg`** — standalone native binary for video editing & programmatic `.mp4` animations
+- **Playwright + Chromium** — live browser automation & HTML/CSS-to-image/video rendering
+- **Pre-cached Python libraries** — `pandas`, `openpyxl`, `pypdf`, `pillow`, `requests`, `beautifulsoup4` (ready offline on conference Wi-Fi)
+- **`Desktop/ai-workshop`** — dedicated starter workspace folder
 
 ---
 
@@ -21,13 +24,13 @@ A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed lapto
 4. Close and reopen Terminal once before running `opencode`.
 
 ### Windows 10 / 11
-1. Press the **Windows key**, type **`PowerShell`** (or **`Terminal`**), and open **Windows PowerShell**.
+1. Press the **Windows key**, type **`Terminal`** *(Windows 11)* or **`Windows PowerShell`** *(Windows 10)*, and press **Enter**. *(Don't use Command Prompt.)*
 2. Paste this single line and press **Enter**:
    ```powershell
    irm https://raw.githubusercontent.com/nigelaw88/ai-workshop-kit/main/setup-windows.ps1 | iex
    ```
 3. Screenshot the **`PRE-FLIGHT CHECK SUMMARY`** at the end and send it to the organizer.
-4. Close and reopen PowerShell/Terminal once before running `opencode`.
+4. Close and reopen Terminal/PowerShell once before running `opencode`.
 
 ---
 
@@ -41,12 +44,3 @@ A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed lapto
   ```powershell
   cd "$env:USERPROFILE\Desktop\ai-workshop"; opencode
   ```
-
-> **Why `Desktop/ai-workshop`?** Keeping everyone inside a dedicated folder prevents the AI agent from wandering across their home directory and makes it easy to drag-and-drop sample PDFs, CSVs, and transcripts into the workspace during exercises.
-
----
-
-## Organizer Checklist Before Workshop Day
-1. **Test on Windows & Mac** using the live 1-liners above.
-2. **Collect Pre-Flight screenshots** from attendees 24–48 hours ahead of time.
-3. **Model / API Key plan:** Decide whether attendees will use a free tier (e.g., OpenCode Zen free models / Google Gemini free tier) or organizer-issued spending-capped workshop keys (e.g., $2–$5 cap per journalist) via `/connect` inside OpenCode.

@@ -4,10 +4,14 @@
 # Installs:
 #   1. OpenCode v2 (standalone native binary in %USERPROFILE%\.opencode\bin)
 #   2. uv + standalone Python 3.12 (in %USERPROFILE%\.local\bin)
-#   3. Creates Desktop\ai-workshop starter folder
-#   4. Runs a Pre-Flight Check you can screenshot for the organizer
+#   3. ffmpeg (standalone native binary in %USERPROFILE%\.local\bin)
+#   4. Playwright + Chromium (for live browser automation & visual rendering)
+#   5. Pre-caches core Python data/PDF/image libraries in uv cache
+#   6. Creates Desktop\ai-workshop starter folder + runs Pre-Flight Check
 # ==============================================================================
-$ErrorActionPreference = "Stop"
+# Use Continue globally so native CLIs (uv, playwright, tar) writing progress to stderr
+# don't trigger false terminating errors in Windows PowerShell 5.1
+$ErrorActionPreference = "Continue"
 
 # Ensure TLS 1.2 for older Windows 10 / PowerShell 5.1 hosts
 try {
@@ -32,6 +36,8 @@ try {
 
 $OpenCodeBin = Join-Path $env:USERPROFILE ".opencode\bin"
 $UvBin       = Join-Path $env:USERPROFILE ".local\bin"
+New-Item -ItemType Directory -Force -Path $OpenCodeBin | Out-Null
+New-Item -ItemType Directory -Force -Path $UvBin | Out-Null
 
 function Add-ToUserPath {
     param([string]$Dir)
@@ -61,8 +67,7 @@ function Add-ToUserPath {
 }
 
 # 1. Install OpenCode v2 (standalone binary - auto-detects x64 vs ARM64, no Admin needed)
-Write-Host "[1/3] Installing OpenCode..." -ForegroundColor White
-New-Item -ItemType Directory -Force -Path $OpenCodeBin | Out-Null
+Write-Host "[1/5] Installing OpenCode..." -ForegroundColor White
 $OpenCodeExe = Join-Path $OpenCodeBin "opencode.exe"
 
 if (Test-Path $OpenCodeExe) {
@@ -109,7 +114,7 @@ if (Test-Path $OpenCodeExe) {
 
 # 2. Install uv + standalone Python 3.12 (zero Admin)
 Write-Host ""
-Write-Host "[2/3] Installing uv & standalone Python 3.12..." -ForegroundColor White
+Write-Host "[2/5] Installing uv & standalone Python 3.12..." -ForegroundColor White
 Add-ToUserPath $UvBin
 
 if (Get-Command uv -ErrorAction SilentlyContinue) {
@@ -121,13 +126,40 @@ if (Get-Command uv -ErrorAction SilentlyContinue) {
 
 & uv python install 3.12
 
-# 3. Create clean workshop folder
+# 3. Install standalone ffmpeg (zero Admin - via PyPI imageio-ffmpeg)
 Write-Host ""
-Write-Host "[3/3] Creating workshop workspace folder..." -ForegroundColor White
+Write-Host "[3/5] Installing ffmpeg (video & animation engine)..." -ForegroundColor White
+$FfmpegExe = Join-Path $UvBin "ffmpeg.exe"
+if ((Get-Command ffmpeg -ErrorAction SilentlyContinue) -or (Test-Path $FfmpegExe)) {
+    $ffLine = ((& ffmpeg -version 2>&1) | Select-Object -First 1)
+    Write-Host "  ffmpeg already installed: $ffLine" -ForegroundColor Green
+} else {
+    $ffSrc = (& uv run --python 3.12 --with imageio-ffmpeg python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())" | Select-Object -Last 1)
+    if ($ffSrc) { $ffSrc = $ffSrc.ToString().Trim() }
+    if (-not $ffSrc -or -not (Test-Path $ffSrc)) {
+        Write-Host "  [WARN] Could not locate downloaded ffmpeg binary." -ForegroundColor Yellow
+    } else {
+        Copy-Item -Path $ffSrc -Destination $FfmpegExe -Force
+        Write-Host "  Installed ffmpeg to $FfmpegExe" -ForegroundColor Green
+    }
+}
+
+# 4. Install Playwright + Chromium (browser automation & motion-graphic rendering)
+Write-Host ""
+Write-Host "[4/5] Installing Playwright & Chromium browser..." -ForegroundColor White
+& uv tool install --python 3.12 --force playwright
+Add-ToUserPath $UvBin
+& playwright install chromium
+
+# 5. Pre-cache core journalism/data Python libraries & create workspace folder
+Write-Host ""
+Write-Host "[5/5] Pre-caching data/PDF/image libraries & creating workspace..." -ForegroundColor White
+& uv run --python 3.12 --with pandas --with openpyxl --with pypdf --with pillow --with requests --with beautifulsoup4 python -c "import pandas, openpyxl, pypdf, PIL, requests, bs4; print('  Core Python libraries cached OK')"
+
 $DesktopDir  = [Environment]::GetFolderPath("Desktop")
 $WorkshopDir = Join-Path $DesktopDir "ai-workshop"
 New-Item -ItemType Directory -Force -Path $WorkshopDir | Out-Null
-Write-Host "  Ready: $WorkshopDir" -ForegroundColor Green
+Write-Host "  Workspace ready: $WorkshopDir" -ForegroundColor Green
 
 # ==============================================================================
 # Pre-Flight Verification
@@ -160,6 +192,23 @@ try {
     Write-Host "  [OK] Python:     $($pyVer.Trim()) (via uv)" -ForegroundColor Green
 } catch {
     Write-Host "  [FAIL] Python:   Failed to run via uv" -ForegroundColor Red
+    $allOk = $false
+}
+
+try {
+    $ffVer = ((& ffmpeg -version 2>&1) | Select-Object -First 1).ToString()
+    $ffShort = ($ffVer -split " Copyright")[0].Trim()
+    Write-Host "  [OK] ffmpeg:     $ffShort" -ForegroundColor Green
+} catch {
+    Write-Host "  [FAIL] ffmpeg:   Not found" -ForegroundColor Red
+    $allOk = $false
+}
+
+try {
+    $pwVer = (& playwright --version 2>&1) | Out-String
+    Write-Host "  [OK] Playwright: $($pwVer.Trim()) (+ Chromium)" -ForegroundColor Green
+} catch {
+    Write-Host "  [FAIL] Playwright: Not found" -ForegroundColor Red
     $allOk = $false
 }
 
