@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Agentic AI Workshop — macOS Setup Kit (Zero-Admin, Zero-Xcode)
+# Agentic AI Workshop — macOS & Linux Setup Kit (Zero-Admin, Zero-Xcode)
 # Installs:
 #   1. OpenCode v2 (standalone binary in ~/.opencode/bin)
 #   2. uv + standalone Python 3.12 (in ~/.local/bin — never triggers Xcode CLT)
@@ -18,9 +18,16 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+OS_NAME="$(uname -s)"
+if [ "$OS_NAME" = "Darwin" ]; then
+  OS_LABEL="macOS"
+else
+  OS_LABEL="Linux"
+fi
+
 echo ""
 echo -e "${BOLD}${CYAN}=====================================================${NC}"
-echo -e "${BOLD}${CYAN}   Agentic AI Workshop — macOS Pre-Flight Setup${NC}"
+echo -e "${BOLD}${CYAN}   Agentic AI Workshop — ${OS_LABEL} Pre-Flight Setup${NC}"
 echo -e "${BOLD}${CYAN}=====================================================${NC}"
 echo ""
 
@@ -47,17 +54,18 @@ fi
 export PATH="$HOME/.opencode/bin:$HOME/.local/bin:$PATH"
 uv python install 3.12
 
-# Ensure PATH entries persist in ~/.zshrc (default macOS shell)
-ZSHRC="$HOME/.zshrc"
-touch "$ZSHRC"
-if ! grep -q '\.opencode/bin' "$ZSHRC" 2>/dev/null; then
-  echo 'export PATH="$HOME/.opencode/bin:$PATH"' >> "$ZSHRC"
-fi
-if ! grep -q '\.local/bin' "$ZSHRC" 2>/dev/null; then
-  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$ZSHRC"
-fi
+# Persist PATH in both ~/.zshrc (macOS default) and ~/.bashrc (Linux default)
+for RC_FILE in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  touch "$RC_FILE"
+  if ! grep -q '\.opencode/bin' "$RC_FILE" 2>/dev/null; then
+    echo 'export PATH="$HOME/.opencode/bin:$PATH"' >> "$RC_FILE"
+  fi
+  if ! grep -q '\.local/bin' "$RC_FILE" 2>/dev/null; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC_FILE"
+  fi
+done
 
-# 3. Install standalone ffmpeg (zero Admin, zero Homebrew — via PyPI imageio-ffmpeg)
+# 3. Install standalone ffmpeg (zero Admin, zero Homebrew/apt — via PyPI imageio-ffmpeg)
 echo ""
 echo -e "${BOLD}[3/5] Installing ffmpeg (video & animation engine)...${NC}"
 if command -v ffmpeg >/dev/null 2>&1; then
@@ -116,7 +124,7 @@ else
 fi
 
 if PY_VER=$(uv run --python 3.12 python --version 2>/dev/null); then
-  echo -e "  ${GREEN}✅ Python:${NC}     $PY_VER (via uv, no Xcode needed)"
+  echo -e "  ${GREEN}✅ Python:${NC}     $PY_VER (via uv)"
 else
   echo -e "  ${RED}❌ Python:${NC}     Failed to run via uv"
   ALL_OK=false

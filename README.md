@@ -1,8 +1,8 @@
 # Agentic AI Workshop — Pre-Flight Setup Kit
 
-A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed laptops (**macOS** & **Windows 10/11**), covering all 6 workshop sessions (intro, workflows, creative/video, browser automation, data, and systems).
+A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed laptops (**macOS**, **Linux**, & **Windows 10/11**), covering all 6 workshop sessions (intro, workflows, creative/video, browser automation, data, and systems).
 
-### What It Installs (User-Space Only — No Admin, No Xcode, No Homebrew)
+### What It Installs (User-Space Only — No Admin, No Xcode, No Homebrew/apt)
 - **OpenCode v2** — standalone agentic AI terminal CLI
 - **`uv` + Python 3.12** — fast, isolated Python runtime (never triggers macOS Xcode CLT)
 - **`ffmpeg`** — standalone native binary for video editing & programmatic `.mp4` animations
@@ -14,11 +14,11 @@ A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed lapto
 
 ## Participant Pre-Flight Instructions (Copy & Paste)
 
-### macOS
-1. Press **`⌘ + Space`**, type **`Terminal`**, and press **Enter**.
+### macOS & Linux
+1. Open **Terminal** (`⌘ + Space` → `Terminal` on Mac).
 2. Paste this single line and press **Enter**:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/nigelaw88/ai-workshop-kit/main/setup-mac.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/nigelaw88/ai-workshop-kit/main/setup.sh | bash
    ```
 3. Screenshot the **`PRE-FLIGHT CHECK SUMMARY`** at the end and send it to the organizer.
 4. Close and reopen Terminal once before running `opencode`.
@@ -36,7 +36,7 @@ A zero-Admin, zero-Xcode setup kit for mixed personal and newsroom-managed lapto
 
 ## Workshop Day: Starting OpenCode in the Clean Folder
 
-- **macOS:**
+- **macOS & Linux:**
   ```bash
   cd ~/Desktop/ai-workshop && opencode
   ```
