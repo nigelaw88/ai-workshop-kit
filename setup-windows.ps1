@@ -1,5 +1,6 @@
-﻿# ==============================================================================
-# Agentic AI Workshop — Windows 10/11 Setup Kit (Zero-Admin, x64 & ARM64)
+# ==============================================================================
+# Agentic AI Workshop - Windows 10/11 Setup Kit (Zero-Admin, x64 & ARM64)
+# Compatible with Windows PowerShell 5.1 and PowerShell 7+
 # Installs:
 #   1. OpenCode v2 (standalone native binary in %USERPROFILE%\.opencode\bin)
 #   2. uv + standalone Python 3.12 (in %USERPROFILE%\.local\bin)
@@ -8,9 +9,14 @@
 # ==============================================================================
 $ErrorActionPreference = "Stop"
 
+# Ensure TLS 1.2 for older Windows 10 / PowerShell 5.1 hosts
+try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+} catch {}
+
 Write-Host ""
 Write-Host "=====================================================" -ForegroundColor Cyan
-Write-Host "   Agentic AI Workshop — Windows Pre-Flight Setup" -ForegroundColor Cyan
+Write-Host "   Agentic AI Workshop - Windows Pre-Flight Setup" -ForegroundColor Cyan
 Write-Host "=====================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -21,7 +27,7 @@ try {
         Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
     }
 } catch {
-    Write-Host "  (Skipping ExecutionPolicy change — managed by IT policy)" -ForegroundColor Yellow
+    Write-Host "  (Skipping ExecutionPolicy change - managed by IT policy)" -ForegroundColor Yellow
 }
 
 $OpenCodeBin = Join-Path $env:USERPROFILE ".opencode\bin"
@@ -41,20 +47,24 @@ function Add-ToUserPath {
     }
 }
 
-# 1. Install OpenCode v2 (standalone binary — auto-detects x64 vs ARM64, no Admin needed)
+# 1. Install OpenCode v2 (standalone binary - auto-detects x64 vs ARM64, no Admin needed)
 Write-Host "[1/3] Installing OpenCode..." -ForegroundColor White
 New-Item -ItemType Directory -Force -Path $OpenCodeBin | Out-Null
 $OpenCodeExe = Join-Path $OpenCodeBin "opencode.exe"
 
 if (Test-Path $OpenCodeExe) {
     Add-ToUserPath $OpenCodeBin
-    Write-Host "  Already installed: $(& $OpenCodeExe --version 2>$null)" -ForegroundColor Green
+    $existingVer = (& $OpenCodeExe --version 2>&1) | Out-String
+    Write-Host "  Already installed: $($existingVer.Trim())" -ForegroundColor Green
 } else {
-    $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
-    if ($arch -eq "arm64") {
-        $pkg = "@opencode/cli-windows-arm64"
+    $rawArch = $env:PROCESSOR_ARCHITECTURE
+    if ($env:PROCESSOR_ARCHITEW6432) { $rawArch = $env:PROCESSOR_ARCHITEW6432 }
+    if ($rawArch -and $rawArch.ToLower() -match "arm64") {
+        $arch = "arm64"
+        $pkg  = "@opencode/cli-windows-arm64"
     } else {
-        $pkg = "@opencode/cli-windows-x64"
+        $arch = "x64"
+        $pkg  = "@opencode/cli-windows-x64"
     }
     Write-Host "  Detected architecture: $arch ($pkg)" -ForegroundColor DarkGray
 
@@ -66,8 +76,12 @@ if (Test-Path $OpenCodeExe) {
 
     try {
         Write-Host "  Downloading OpenCode v$($meta.version)..." -ForegroundColor DarkGray
+        $prevProgress = $ProgressPreference
+        $ProgressPreference = "SilentlyContinue"
         Invoke-WebRequest -Uri $tarballUrl -OutFile $tgzPath -UseBasicParsing
-        tar.exe -xzf $tgzPath -C $tmpDir
+        $ProgressPreference = $prevProgress
+
+        & tar.exe -xzf $tgzPath -C $tmpDir
         $foundExe = Get-ChildItem -Path $tmpDir -Recurse -Filter "opencode.exe" | Select-Object -First 1
         if (-not $foundExe) {
             throw "Could not locate opencode.exe inside downloaded archive."
@@ -92,7 +106,7 @@ if (Get-Command uv -ErrorAction SilentlyContinue) {
     Add-ToUserPath $UvBin
 }
 
-uv python install 3.12
+& uv python install 3.12
 
 # 3. Create clean workshop folder
 Write-Host ""
